@@ -73,9 +73,7 @@ def quick_plot(
                 label=label,
             )
             c = artists[0].get_color()
-            ax.plot(
-                data[x_key], data[y_key], linestyle="-", alpha=0.2, label=label, color=c
-            )
+            ax.plot(data[x_key], data[y_key], linestyle="-", alpha=0.2, color=c)
         else:
             ax.plot(data[x_key], data[y_key], linestyle="-", alpha=0.8, label=label)
 
