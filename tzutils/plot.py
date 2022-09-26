@@ -1,10 +1,27 @@
+from re import I
 from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import matplotlib as mpl
 from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
+
+# Custom colors
+tz_colors = [
+    "#4169E1",
+    "#F26419",
+    "#63B42D",
+    "#D23751",
+    "#F5AD29",
+    "#A4036F",
+    "#76362E",
+    "#D295BF",
+    "#5D675B",
+    "#55DDE0",
+]
+mpl.rcParams["axes.prop_cycle"] = mpl.cycler(color=tz_colors)
 
 
 def tb_smooth(scalars: List[float], weight: float) -> List[float]:
@@ -64,6 +81,65 @@ def quick_plot(
         else:
             data = df
 
+        if smooth:
+            artists = ax.plot(
+                data[x_key],
+                tb_smooth(data[y_key], smooth_weight),
+                linestyle="-",
+                alpha=0.8,
+                label=label,
+            )
+            c = artists[0].get_color()
+            ax.plot(data[x_key], data[y_key], linestyle="-", alpha=0.2, color=c)
+        else:
+            ax.plot(data[x_key], data[y_key], linestyle="-", alpha=0.8, label=label)
+
+    # plt.grid(which="minor", linestyle="--", linewidth=0.5)
+    # plt.grid(which="major", linestyle="-")
+    ax.legend()
+    ax.set_title(title)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    return
+
+
+def quick_plot_y(
+    ax: Axes,
+    data: pd.DataFrame,
+    x_key: str,
+    y_keys: str,
+    labels: List[str] = None,
+    title: str = None,
+    x_label: str = None,
+    y_label: str = None,
+    smooth: bool = False,
+    smooth_weight: float = 0.8,
+):
+    """
+    A helper function to make a quick graph. Figure creation and saving is left to the user.
+
+    Parameters
+    ----------
+    ax : Axes
+        The axes to draw to
+
+    df : pd.DataFrame
+        The dataframe containing plot data
+
+    param_dict : dict
+       Dictionary of keyword arguments to pass to ax.plot
+
+    Returns
+    -------
+    out : list
+        list of artists added
+    """
+    # TODO: Add a custom set of colors to use by default (royalblue)
+    if labels is None:
+        labels = y_keys
+    else:
+        assert len(labels) == len(y_keys)
+    for y_key, label in zip(y_keys, labels):
         if smooth:
             artists = ax.plot(
                 data[x_key],
@@ -152,15 +228,43 @@ def multilegend_plot_example(df):
 
 if __name__ == "__main__":
     # example of how to use this
-    df = pd.DataFrame(
-        {
-            "x": [1, 2, 3, 4, 5],
-            "y": [1, 2, 3, 4, 5],
-        }
-    )
-    df["y2"] = df["y"] * 2
-    df["y3"] = df["y"] * 3
+    df = pd.DataFrame({"x": np.linspace(0.01, 2, 100)})
+    df["y"] = df["x"]
+    df["y2"] = df["x"] ** 2
+    df["y3"] = df["x"] ** 3
+    df["y_sqrt"] = np.sqrt(df["x"])
+    df["y_qrt"] = df["x"] ** 0.25
+    df["y_log"] = np.log(df["x"])
+    df["y_sin"] = np.sin(df["x"] * np.pi) * 4
+    df["y_cos"] = np.cos(df["x"] * np.pi) * 4
+    df["y_scs"] = np.sin((df["x"] - 0.5) * np.pi) * 4
+    df["y_scc"] = np.sin((df["x"] - 1) * np.pi) * 4
+    y_keys = [
+        "y",
+        "y2",
+        "y3",
+        "y_sqrt",
+        "y_qrt",
+        "y_log",
+        "y_sin",
+        "y_cos",
+        "y_scs",
+        "y_scc",
+    ]
+    labels = [
+        "linear",
+        "quadratic",
+        "cubic",
+        "sqrt",
+        "qrt",
+        "log",
+        "sin",
+        "cos",
+        "sin2",
+        "sin3",
+    ]
 
-    fig, ax = plt.subplot(1, 1)
-    fig(figsize=(8, 8))
-    quick_plot(ax, df, "x", "y")
+    plt.figure(figsize=(8, 8))
+    ax = plt.subplot()
+    quick_plot_y(ax, df, "x", y_keys, labels, "Example Plot")
+    plt.show()
