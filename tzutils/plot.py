@@ -32,7 +32,8 @@ def tb_smooth(scalars: List[float], weight: float) -> List[float]:
     last = scalars[0]  # First value in the plot (first timestep)
     smoothed = list()
     for point in scalars:
-        smoothed_val = last * weight + (1 - weight) * point  # Calculate smoothed value
+        smoothed_val = last * weight + \
+            (1 - weight) * point  # Calculate smoothed value
         smoothed.append(smoothed_val)  # Save it
         last = smoothed_val  # Anchor the last smoothed value
 
@@ -53,7 +54,18 @@ def quick_plot(
     param_dict: dict = {},
 ):
     """
-    A helper function to make a quick graph. Figure creation and saving is left to the user.
+    Helper plotting function. Input dataframe is vertical, separated by a label column, i.e. varied x's and y's.
+    Figure creation and saving is left to the user.
+
+    Ex:
+      x  |  y  | label 
+    -------------------------
+      1  |  2  | double 
+      2  |  4  | double
+      3  |  6  | double
+      1  |  3  | triple
+      2  |  6  | triple
+      4  |  12 | triple
 
     Parameters
     ----------
@@ -90,9 +102,11 @@ def quick_plot(
                 label=label,
             )
             c = artists[0].get_color()
-            ax.plot(data[x_key], data[y_key], linestyle="-", alpha=0.2, color=c)
+            ax.plot(data[x_key], data[y_key],
+                    linestyle="-", alpha=0.2, color=c)
         else:
-            ax.plot(data[x_key], data[y_key], linestyle="-", alpha=0.8, label=label)
+            ax.plot(data[x_key], data[y_key],
+                    linestyle="-", alpha=0.8, label=label)
 
     # plt.grid(which="minor", linestyle="--", linewidth=0.5)
     # plt.grid(which="major", linestyle="-")
@@ -116,7 +130,15 @@ def quick_plot_y(
     smooth_weight: float = 0.8,
 ):
     """
-    A helper function to make a quick graph. Figure creation and saving is left to the user.
+    Helper plotting function. Input dataframe is horizontal, i.e. shared x keys but multiple y outputs.
+    Figure creation and saving is left to the user.
+
+    Ex:
+      x  |  y1  |  y2  |  y3
+    -------------------------
+      1  |  0.1 |  0.2 |  0.3
+      2  |  0.4 |  0.5 |  0.6
+      3  |  0.7 |  0.8 |  0.9
 
     Parameters
     ----------
@@ -149,9 +171,97 @@ def quick_plot_y(
                 label=label,
             )
             c = artists[0].get_color()
-            ax.plot(data[x_key], data[y_key], linestyle="-", alpha=0.2, color=c)
+            ax.plot(data[x_key], data[y_key],
+                    linestyle="-", alpha=0.2, color=c)
         else:
-            ax.plot(data[x_key], data[y_key], linestyle="-", alpha=0.8, label=label)
+            ax.plot(data[x_key], data[y_key],
+                    linestyle="-", alpha=0.8, label=label)
+
+    # plt.grid(which="minor", linestyle="--", linewidth=0.5)
+    # plt.grid(which="major", linestyle="-")
+    ax.legend()
+    ax.set_title(title)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    return
+
+
+def quick_plot_std_error(
+    ax: Axes,
+    df: pd.DataFrame,
+    x_key: str,
+    y_key: str,
+    label_key: str = None,
+    title: str = None,
+    x_label: str = None,
+    y_label: str = None,
+    smooth: bool = False,
+    smooth_weight: float = 0.8,
+    std_weight: float = 1.0,
+):
+    """
+    Helper plotting function. Input dataframe is vertical, separated by a label column, i.e. varied x's and y's.
+    Includes a std bar based on joining over similar entries which share a join_key (like a seed).
+    Figure creation and saving is left to the user.
+
+    Ex:
+      x  |  y  | label  | seed
+    -------------------------
+      1  |   2 | double | 0 
+      2  |   4 | double | 0
+      1  | 2.5 | double | 1
+      2  |   5 | double | 1
+
+    Parameters
+    ----------
+    ax : Axes
+        The axes to draw to
+
+    df : pd.DataFrame
+        The dataframe containing plot data
+
+    Returns
+    -------
+    out : list
+        list of artists added
+    """
+    labels = [None]
+    if label_key:
+        labels = df[label_key].unique()
+    for label in labels:
+        if label:
+            data = df[df[label_key] == label]
+        else:
+            data = df
+
+        # Get the mean and std of data that shares join_key
+        x = data[x_key].unique()
+        mean = data.groupby(x_key)[y_key].mean()
+        std = data.groupby(x_key)[y_key].std()
+        # Plot mean
+        if smooth:
+            artists = ax.plot(
+                x,
+                tb_smooth(mean, smooth_weight),
+                linestyle="-",
+                alpha=0.8,
+                label=label,
+            )
+            c = artists[0].get_color()
+            ax.plot(x, mean, linestyle="-", alpha=0.2, color=c)
+        else:
+            artists = ax.plot(x, mean,
+                              linestyle="-", alpha=0.8, label=label)
+            c = artists[0].get_color()
+
+        # Then add std error bars
+        ax.fill_between(
+            x,
+            mean - std_weight * std,
+            mean + std_weight * std,
+            alpha=0.1,
+            color=c,
+        )
 
     # plt.grid(which="minor", linestyle="--", linewidth=0.5)
     # plt.grid(which="major", linestyle="-")
@@ -165,7 +275,8 @@ def quick_plot_y(
 def add_horizontal_line(
     ax: Axes, x, y, text, color="black", linestyle="--", linewidth=1, alpha=0.8
 ):
-    ax.axhline(y=y, color=color, linestyle=linestyle, linewidth=linewidth, alpha=alpha)
+    ax.axhline(y=y, color=color, linestyle=linestyle,
+               linewidth=linewidth, alpha=alpha)
     y_bot, y_top = ax.get_ylim()
     height = y_top - y_bot
     ax.text(x, y + 0.01 * height, text, rotation=360, color=color)
@@ -208,7 +319,7 @@ def multilegend_plot_example(df):
             lines.append(l)
 
     color_leg = plt.legend(
-        lines[2 :: len(lr)], [f"bs={b}" for b in bs], loc="upper center"
+        lines[2:: len(lr)], [f"bs={b}" for b in bs], loc="upper center"
     )
     ls_leg = [
         Line2D([0], [0], color="k", ls=ls, marker=".", label=f"lr={r}")
