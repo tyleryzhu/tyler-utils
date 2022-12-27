@@ -379,5 +379,5 @@ if __name__ == "__main__":
     ax = plt.subplot()
     quick_plot_y(ax, df, "x", y_keys, labels, "Example Plot")
     quick_plot_y(ax, df, "x", ["y3"], ["noisy_cubic"], "Example Plot", smooth=True)
-    plt.show()
     plt.savefig("example.png", bbox_inches="tight")
+    plt.show()
