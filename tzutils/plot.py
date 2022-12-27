@@ -342,7 +342,7 @@ if __name__ == "__main__":
     df = pd.DataFrame({"x": np.linspace(0.01, 2, 100)})
     df["y"] = df["x"]
     df["y2"] = df["x"] ** 2
-    df["y3"] = df["x"] ** 3
+    df["y3"] = df["x"] ** 3 + np.random.normal(0, 0.6, 100)
     df["y_sqrt"] = np.sqrt(df["x"])
     df["y_qrt"] = df["x"] ** 0.25
     df["y_log"] = np.log(df["x"])
@@ -353,7 +353,7 @@ if __name__ == "__main__":
     y_keys = [
         "y",
         "y2",
-        "y3",
+#        "y3",
         "y_sqrt",
         "y_qrt",
         "y_log",
@@ -365,7 +365,7 @@ if __name__ == "__main__":
     labels = [
         "linear",
         "quadratic",
-        "cubic",
+#        "cubic",
         "sqrt",
         "qrt",
         "log",
@@ -378,4 +378,6 @@ if __name__ == "__main__":
     plt.figure(figsize=(8, 8))
     ax = plt.subplot()
     quick_plot_y(ax, df, "x", y_keys, labels, "Example Plot")
+    quick_plot_y(ax, df, "x", ["y3"], ["noisy_cubic"], "Example Plot", smooth=True)
     plt.show()
+    plt.savefig("example.png", bbox_inches="tight")
