@@ -52,9 +52,12 @@ def quick_plot(
     smooth: bool = False,
     smooth_weight: float = 0.8,
     param_dict: dict = {},
+    param_dict_labelkey: dict = {},
+    legend: bool = True,
 ):
     """
     Helper plotting function. Input dataframe is vertical, separated by a label column, i.e. varied x's and y's.
+    can pass in param_dict
     Figure creation and saving is left to the user.
 
     Ex:
@@ -85,13 +88,21 @@ def quick_plot(
     """
     # TODO: Add a custom set of colors to use by default (royalblue)
     labels = [None]
+    use_paramdictlabel = False
     if label_key:
         labels = df[label_key].unique()
+        if len(param_dict_labelkey) == len(labels):
+            use_paramdictlabel = True
     for label in labels:
         if label:
             data = df[df[label_key] == label]
         else:
             data = df
+
+        if use_paramdictlabel:
+            this_param_dict = param_dict_labelkey[label].copy()
+        else:
+            this_param_dict = param_dict.copy()
 
         if smooth:
             artists = ax.plot(
@@ -100,17 +111,21 @@ def quick_plot(
                 linestyle="-",
                 alpha=0.8,
                 label=label,
+                **this_param_dict,
             )
             c = artists[0].get_color()
             ax.plot(data[x_key], data[y_key],
-                    linestyle="-", alpha=0.2, color=c)
+                    linestyle="-", alpha=0.2, color=c, **this_param_dict)
         else:
-            ax.plot(data[x_key], data[y_key],
-                    linestyle="-", alpha=0.8, label=label)
+            if not "linestyle" in this_param_dict:
+                this_param_dict["linestyle"] = "-"
+            if not "alpha" in this_param_dict:
+                this_param_dict["alpha"] = 0.8
+            ax.plot(data[x_key], data[y_key], 
+                    label=label, **this_param_dict)
 
-    # plt.grid(which="minor", linestyle="--", linewidth=0.5)
-    # plt.grid(which="major", linestyle="-")
-    ax.legend()
+    if legend:
+        ax.legend()
     ax.set_title(title)
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
@@ -198,6 +213,7 @@ def quick_plot_std_error(
     smooth: bool = False,
     smooth_weight: float = 0.8,
     std_weight: float = 1.0,
+    param_dict: dict = {},
 ):
     """
     Helper plotting function. Input dataframe is vertical, separated by a label column, i.e. varied x's and y's.
@@ -248,10 +264,10 @@ def quick_plot_std_error(
                 label=label,
             )
             c = artists[0].get_color()
-            ax.plot(x, mean, linestyle="-", alpha=0.2, color=c)
+            ax.plot(x, mean, linestyle="-", alpha=0.2, color=c, **param_dict)
         else:
             artists = ax.plot(x, mean,
-                              linestyle="-", alpha=0.8, label=label)
+                              linestyle="-", alpha=0.8, label=label, **param_dict)
             c = artists[0].get_color()
 
         # Then add std error bars
@@ -266,6 +282,99 @@ def quick_plot_std_error(
     # plt.grid(which="minor", linestyle="--", linewidth=0.5)
     # plt.grid(which="major", linestyle="-")
     ax.legend()
+    ax.set_title(title)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    return
+
+def quick_plot_std_error_label(
+    ax: Axes,
+    df: pd.DataFrame,
+    x_key: str,
+    y_key: str,
+    std_key: str,
+    label_key: str = None,
+    title: str = None,
+    x_label: str = None,
+    y_label: str = None,
+    smooth: bool = False,
+    smooth_weight: float = 0.8,
+    std_weight: float = 1.0,
+    param_dict: dict = {},
+    param_dict_labelkey: dict() = {},
+    legend: bool = True,
+):
+    """
+    Helper plotting function. Input dataframe is vertical, separated by a label column, i.e. varied x's and y's.
+    Includes a std bar based on joining over similar entries which share a join_key (like a seed).
+    Figure creation and saving is left to the user.
+
+    Ex:
+      x  |  y  | label  | seed
+    -------------------------
+      1  |   2 | double | 0 
+      2  |   4 | double | 0
+      1  | 2.5 | double | 1
+      2  |   5 | double | 1
+
+    Parameters
+    ----------
+    ax : Axes
+        The axes to draw to
+
+    df : pd.DataFrame
+        The dataframe containing plot data
+
+    Returns
+    -------
+    out : list
+        list of artists added
+    """
+    labels = [None]
+    use_paramdictlabel = False
+    if label_key:
+        labels = df[label_key].unique()
+        if len(param_dict_labelkey) == len(labels):
+            use_paramdictlabel = True
+    for label in labels:
+        if label:
+            data = df[df[label_key] == label]
+        else:
+            data = df
+
+        if use_paramdictlabel:
+            this_param_dict = param_dict_labelkey[label]
+        else:
+            this_param_dict = param_dict
+        # Plot mean
+        if smooth:
+            artists = ax.plot(
+                data[x_key],
+                tb_smooth(data[y_key], smooth_weight),
+                linestyle="-",
+                alpha=0.8,
+                label=label,
+            )
+            c = artists[0].get_color()
+            ax.plot(data[x_key], data[y_key], linestyle="-", alpha=0.2, color=c, **this_param_dict)
+        else:
+            artists = ax.plot(data[x_key], data[y_key],
+                              linestyle="-", alpha=0.8, label=label, **this_param_dict)
+            c = artists[0].get_color()
+
+        # Then add std error bars
+        ax.fill_between(
+            data[x_key],
+            data[y_key] - std_weight * data[std_key],
+            data[y_key] + std_weight * data[std_key],
+            alpha=0.4,
+            color=c,
+        )
+
+    # plt.grid(which="minor", linestyle="--", linewidth=0.5)
+    # plt.grid(which="major", linestyle="-")
+    if legend:
+        ax.legend()
     ax.set_title(title)
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
